@@ -1,0 +1,56 @@
+from collections import Counter
+twocount, threecount = 0, 0
+for entry in open('/Users/chartl/Documents/Advent2018/puzzle2/input.txt'):
+  cnt = set(Counter(entry).values())
+  if 2 in cnt:
+    twocount += 1
+  if 3 in cnt:
+    threecount += 1
+
+checksum = twocount * threecount
+
+def twokey(x, i):  # assume there is a mismatch in the i'th position; group by other characters
+  return x[:i] + x[(i+1):], x[i]
+
+entries = [x.strip() for x in open('/Users/chartl/Documents/Advent2018/puzzle2/input.txt')]
+
+def twodict(i):  # tree structure for [not ith char] -> [ith char] -> raw str
+  dct = dict()
+  for e in entries:
+    k1, k2 = twokey(e, i)
+    if k1 not in dct:
+      dct[k1] = dict()
+    if k2 not in dct[k1]:
+      dct[k1][k2] = list()
+    dct[k1][k2].append(e)
+  return dct
+
+pairs, commonalities = list(), list()
+# overkill for if there are more than one such pair
+for i in range(26):
+  d = twodict(i)
+  check_keys = {k: v for k, v in d.items() if len(v) > 1}
+  if len(check_keys) > 0:
+    for bigmatch, char_dict in check_keys.items():
+      all_mismatch_pairs = list()
+      seen = set()
+      for c1 in char_dict.keys():
+        vals1 = char_dict[c1]
+        for c2 in char_dict.keys():
+          if (c1, c2) in seen or (c2, c1) in seen:
+            continue
+          if c1 == c2:
+            continue
+          vals2 = char_dict[c2]
+          for v1 in vals1:
+            for v2 in vals2:
+              all_mismatch_pairs.append((v1, v2))
+          seen.add((c1,c2))
+          seen.add((c2,c1))
+      if len(all_mismatch_pairs) > 0:
+        pairs.append(all_mismatch_pairs)
+        commonalities.append(bigmatch)
+
+          
+print checksum
+print zip(pairs, commonalities)

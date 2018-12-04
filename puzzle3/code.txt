@@ -1,0 +1,22 @@
+import numpy as np
+import re
+
+line_fmt = re.compile('#(.+) @ (\d+),(\d+): (\d+)x(\d+)')
+fabric = np.zeros((1000, 1000), dtype=np.int32)
+for entry in open('input.txt'):
+  id, offset_row, offset_col, height, width = map(int, line_fmt.match(entry).groups())
+  fabric[offset_row:(offset_row+height),offset_col:(offset_col+width)] += 1
+
+
+contested_area = np.sum(fabric > 1)
+
+
+uncontested_id = None
+for entry in open('input.txt'):
+  id, offset_row, offset_col, height, width = map(int, line_fmt.match(entry).groups())
+  other_claimed = np.sum(fabric[offset_row:(offset_row+height),offset_col:(offset_col+width)] - 1)
+  if other_claimed == 0:
+    uncontested_id = id
+    break
+
+print contested_area, uncontested_id

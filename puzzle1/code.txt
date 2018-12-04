@@ -1,0 +1,22 @@
+base = [int(x.strip()) for x in open('/Users/chartl/Documents/Advent2018/puzzle1/input.txt')]
+#base = [3, 3, 4, -2, -4]
+def looper(g):
+  while True:
+    for t in g:
+      yield t
+
+def cumsum(y):
+  z = 0
+  yield z
+  for h in y:
+    z += h
+    yield z
+
+f = set()
+for j in cumsum(looper(base)):
+  if j in f:
+    break
+  else:
+    f.add(j)
+
+print j

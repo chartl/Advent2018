@@ -1,0 +1,18 @@
+import numpy as np
+base = np.cumsum([int(x.strip()) for x in open('/Users/chartl/Documents/Advent2018/puzzle1/input.txt')])
+
+ans1 = base[-1]
+ans2 = None
+f = set(base)
+for j in xrange(10000):
+  k = ans1 * (j + 1)
+  for c in base:
+    if (c + k) in f:
+      ans2 = c + k
+      break
+    else:
+      f.add(c + k)
+  if ans2:
+    break
+
+print ans1, ans2
