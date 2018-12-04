@@ -1,0 +1,98 @@
+import numpy as np
+from collections import defaultdict
+import re
+
+header_fmt = re.compile('\[(.+)\] Guard #(.+) begins shift')
+general_fmt = re.compile('\[(.+)\] .+')
+def is_hdr(x):
+  return 'Guard' in x
+
+# didn't read clearly enough -- no sleeping before 00:00
+# represent time as 23:00 to 01:00 as no others observed
+def fstr(u):
+  if u < 10:
+    return '0' + str(u)
+  return str(u)
+
+# this was stupid
+def prevday(x):
+  a, b, c = x.split('-')
+  if c in {'1', '01'}:
+    if b == '03':
+      return a + '-' + '02-28'
+    elif b in {'05', '07', '10', '12'}:
+      return a + '-' + fstr(int(b)-1) + '-30'
+    else:
+      return a + '-' + fstr(int(b)-1) if 'b' != '01' else '12' + '-31'
+  return '-'.join([a, b, fstr(int(c)-1)])
+
+def parse_time(tm):
+  d, t = tm.split()
+  hr, mn = t.split(':')
+  if hr == '23':
+    o = 0
+  else:
+    o = 0 # 60 -- actually there are none in the 23 hour
+    d = prevday(d)
+  
+  return d, o + int(mn)
+
+assert parse_time('1-2-3 23:59')[1] == 59, parse_time('foo 23:59')
+assert parse_time('1-2-3 23:23')[1] == 23
+
+time_logs = dict()
+for e in open('input.txt'):
+  print e
+  timestamp = general_fmt.match(e).group(1)
+  date, time = parse_time(timestamp)
+  if date not in time_logs:
+    time_logs[date] = {'guard': None, 'log': []}
+  if is_hdr(e):
+    timestamp, gid = header_fmt.match(e).groups()
+    time_logs[date]['guard'] = gid
+  else:
+    time_logs[date]['log'].append((time, 's' if 'asleep' in e else 'w'))
+
+def zro():
+  return 0
+
+guard_sleep_total = defaultdict(zro)
+for day in time_logs:
+  time_logs[day]['log'] = sorted(time_logs[day]['log'], key=lambda x: x[0])
+  time_logs[day]['intervals'] = np.zeros((60,), dtype=np.int32)
+  k, c = 0, 'w'
+  for t, op in time_logs[day]['log']:
+    assert op != c
+    if c == 's':
+      time_logs[day]['intervals'][(k-1):t] += 1
+    k = t + 1
+    c = op
+  guard_sleep_total[time_logs[day]['guard']] += np.sum(time_logs[day]['intervals'])
+
+print {k: v for k, v in time_logs.items() if v['guard'] is None}
+guard_count = sorted(guard_sleep_total.items(), key=lambda x: x[1])
+print guard_count[-1]
+
+guard_id = guard_count[-1][0]
+
+guard_logs = {d: lg for d, lg in time_logs.iteritems() if lg['guard'] == guard_id}
+ivals = np.vstack([log['intervals'] for log in guard_logs.values()])
+u = [t for t in np.sum(ivals, axis=0)]
+print (u.index(np.max(u)))
+print (u.index(np.max(u))) * int(guard_id)
+
+guards = sorted({lg['guard'] for lg in time_logs.values()})
+guard_arrays = dict()
+gm, gn = 0, None
+for g in guards:
+  guard_logs = {d: lg for d, lg in time_logs.items() if lg['guard'] == g}
+  ivals = np.vstack([log['intervals'] for log in guard_logs.values()])
+  guard_arrays[g] = np.sum(ivals, axis=0)#/float(ivals.shape[0])
+  m = np.max(guard_arrays[g])
+  print g, guard_arrays[g]
+  if m > gm:
+    gm, gn = m, g
+
+print gn, gm
+print np.where(guard_arrays[gn] == gm)[0]
+print int(gn) * np.where(guard_arrays[gn] == gm)[0][0]
